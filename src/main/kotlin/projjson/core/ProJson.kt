@@ -9,21 +9,6 @@ import kotlin.reflect.full.primaryConstructor
 
 class ProJson {
 
-    fun toJson1(obj: Any?): JsonValue {
-        if (obj == null) return JsonPrimitive(null)
-
-        return when (obj) {
-            is String, is Number, is Boolean -> JsonPrimitive(obj)
-
-            is Collection<*> -> {
-                val array = JsonArray()
-                obj.forEach { array.add(toJson(it)) }
-                array
-            }
-
-            else -> objectToJson(obj) //chama aqui
-        }
-    }
     fun toJson(obj: Any?): JsonValue {
         if (obj == null) return JsonPrimitive(null)
 
