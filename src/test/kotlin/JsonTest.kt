@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import projjson.model.JsonPrimitive
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import projjson.model.*
 
 class JsonTest {
 
@@ -107,7 +108,7 @@ class JsonTest {
         val json = ProJson().toJsonString(p)
 
         assertEquals(
-            $$"""{"$type": "Person", "name": "Ana", "age": 25}""",
+            """{"${'$'}type": "Person", "name": "Ana", "age": 25}""",
             json
         )
     }
@@ -142,4 +143,150 @@ class JsonTest {
             JsonPrimitive(Double.NaN)
         }
     }
+
+    // Testar Filter
+
+    @Test
+    fun testFilterMultipleMatches() {
+        val json = ProJson().toJson(listOf(1, 2, 3, 2))
+
+        val result = json.filter {
+            it is JsonPrimitive && it.value == 2
+        }
+
+        assertEquals(2, result.size)
+    }
+
+    @Test
+    fun testFilterNoMatches() {
+        val json = ProJson().toJson(listOf(1, 2, 3))
+
+        val result = json.filter {
+            it is JsonPrimitive && it.value == 10
+        }
+
+        assertEquals(0, result.size)
+    }
+
+    //Testar Find
+
+    @Test
+    fun testFindExisting() {
+        val json = ProJson().toJson(listOf(1, 2, 3))
+
+        val result = json.find {
+            it is JsonPrimitive && it.value == 2
+        }
+
+        assertEquals("2", result.toString())
+    }
+
+    @Test
+    fun testFindNotExisting() {
+        val json = ProJson().toJson(listOf(1, 2, 3))
+
+        val result = json.find {
+            it is JsonPrimitive && it.value == 10
+        }
+
+        assertEquals(null, result)
+    }
+
+    //Testar Count
+
+    @Test
+    fun testCountPrimitives() {
+        val json = ProJson().toJson(listOf(1, 2, 3))
+
+        val count = json.count {
+            it is JsonPrimitive
+        }
+
+        assertEquals(3, count)
+    }
+
+    @Test
+    fun testCountObjects() {
+        val json = ProJson().toJson(
+            mapOf("a" to 1, "b" to 2)
+        )
+
+        val count = json.count {
+            it is JsonObject
+        }
+
+        assertEquals(1, count)
+    }
+
+    //Testar Map
+
+    @Test
+    fun testMapValues() {
+        val json = ProJson().toJson(listOf(1, 2, 3))
+
+        val result = json.map {
+            if (it is JsonPrimitive) it.value else null
+        }
+
+        assertEquals(listOf(1, 2, 3), result.filterNotNull())
+    }
+
+    @Test
+    fun testMapTypes() {
+        val json = ProJson().toJson(
+            mapOf("a" to listOf(1, 2))
+        )
+
+        val result = json.map {
+            when (it) {
+                is JsonObject -> "object"
+                is JsonArray -> "array"
+                is JsonPrimitive -> "primitive"
+            }
+        }
+
+        // Deve conter pelo menos um de cada
+        assert(result.contains("object"))
+        assert(result.contains("array"))
+        assert(result.contains("primitive"))
+    }
+/*
+    // Testar Objetos Dentro De Json Manual
+
+    @Test
+    fun testObjectInsideObject() {
+        val obj = JsonObject()
+        val inner = JsonObject()
+
+        inner.set("x", 10)
+        obj.set("inner", inner)
+
+        assertEquals("""{"inner": {"x": 10}}""", obj.toString())
+    }
+
+    // Testar Listas dentro de Json Manual
+
+    @Test
+    fun testArrayInsideObject() {
+        val obj = JsonObject()
+        val arr = JsonArray()
+
+        arr.add(1)
+        arr.add(2)
+
+        obj.set("nums", arr)
+
+        assertEquals("""{"nums": [1, 2]}""", obj.toString())
+    }
+
+    // Testar Map dentro de JsonObject
+
+    @Test
+    fun testMapInsideObject() {
+        val obj = JsonObject()
+
+        obj.set("data", mapOf("a" to 1))
+
+        assertEquals("""{"data": {"a": 1}}""", obj.toString())
+    }*/
 }
