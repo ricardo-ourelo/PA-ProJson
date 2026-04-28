@@ -9,21 +9,6 @@ import kotlin.reflect.full.primaryConstructor
 
 class ProJson {
 
-    fun toJson1(obj: Any?): JsonValue {
-        if (obj == null) return JsonPrimitive(null)
-
-        return when (obj) {
-            is String, is Number, is Boolean -> JsonPrimitive(obj)
-
-            is Collection<*> -> {
-                val array = JsonArray()
-                obj.forEach { array.add(toJson(it)) }
-                array
-            }
-
-            else -> objectToJson(obj) //chama aqui
-        }
-    }
     fun toJson(obj: Any?): JsonValue {
         if (obj == null) return JsonPrimitive(null)
 
@@ -59,11 +44,6 @@ class ProJson {
         val clazz = obj::class
 
         json.set("\$type", JsonPrimitive(clazz.simpleName))
-
-//        clazz.memberProperties.forEach { prop ->
-//            val value = prop.call(obj)
-//            json.set(prop.name, toJson(value)) // recursivo
-//        }
 
           clazz.primaryConstructor?.parameters?.forEach { param ->
               val prop = clazz.matchProperty(param)
