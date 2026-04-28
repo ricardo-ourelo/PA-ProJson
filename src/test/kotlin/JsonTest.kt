@@ -2,7 +2,9 @@ import projjson.core.ProJson
 import projjson.model.JsonArray
 import projjson.model.JsonObject
 import org.junit.jupiter.api.Test
+import projjson.model.JsonPrimitive
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class JsonTest {
 
@@ -131,5 +133,13 @@ class JsonTest {
         val json = ProJson().toJsonString(null)
 
         assertEquals("null", json)
+    }
+
+    @Test
+    fun testInvalidNaN() {
+
+        assertFailsWith<IllegalArgumentException> {
+            JsonPrimitive(Double.NaN)
+        }
     }
 }
