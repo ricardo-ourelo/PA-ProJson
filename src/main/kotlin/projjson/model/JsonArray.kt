@@ -3,10 +3,6 @@ package projjson.model
 /**
  * Representa um array JSON.
  *
- * Exemplo:
- *
- * [1, 2, 3]
- *
  * JsonArray é um Composite
  * no padrão Composite.
  */

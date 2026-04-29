@@ -3,13 +3,6 @@ package projjson.model
 /**
  * Representa um objeto JSON.
  *
- * Exemplo:
- *
- * {
- *   "name": "Ana",
- *   "age": 25
- * }
- *
  * JsonObject é um Composite
  * no padrão Composite.
  */
