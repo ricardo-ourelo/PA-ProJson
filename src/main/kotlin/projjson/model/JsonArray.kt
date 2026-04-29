@@ -2,6 +2,13 @@ package projjson.model
 
 /**
  * Representa um array JSON.
+ *
+ * Exemplo:
+ *
+ * [1, 2, 3]
+ *
+ * JsonArray é um Composite
+ * no padrão Composite.
  */
 class JsonArray(
     private val elements: MutableList<JsonValue> = mutableListOf()
@@ -9,20 +16,18 @@ class JsonArray(
 
     /**
      * Adiciona elemento ao array.
+     *
+     * O valor é convertido
+     * automaticamente para JsonValue.
      */
     fun add(value: Any?) {
-        elements.add(
-            when (value) {
-                is JsonValue -> value
-                else -> JsonPrimitive(value)
-            }
-        )
+        elements.add(wrap(value))
     }
 
     /**
      * Obtém elemento pelo índice.
      *
-     * Garante que o índice é válido.
+     * Garante índice válido.
      */
     fun get(index: Int): JsonValue {
 
@@ -35,25 +40,29 @@ class JsonArray(
 
     /**
      * Substitui elemento do array.
+     *
+     * Garante índice válido.
      */
     fun set(index: Int, value: Any?) {
+
         require(index in elements.indices) {
             "Invalid index"
         }
-        elements[index] =
-            when (value) {
-                is JsonValue -> value
-                else -> JsonPrimitive(value)
-            }
+
+        elements[index] = wrap(value)
     }
 
     /**
      * Remove elemento do array.
+     *
+     * Garante índice válido.
      */
     fun remove(index: Int) {
+
         require(index in elements.indices) {
             "Invalid index"
         }
+
         elements.removeAt(index)
     }
 
@@ -72,7 +81,7 @@ class JsonArray(
     }
 
     /**
-     * Número de elementos do array.
+     * Número de elementos.
      */
     fun size(): Int {
         return elements.size
@@ -86,13 +95,15 @@ class JsonArray(
     }
 
     /**
-     * Devolve lista de elementos.
+     * Devolve elementos em modo read-only.
      */
     fun elements(): List<JsonValue> = elements
 
     /**
      * Percorre recursivamente
-     * todos os elementos JSON.
+     * toda a árvore JSON.
+     *
+     * Usa o padrão Visitor.
      */
     override fun accept(visitor: (JsonValue) -> Unit) {
 
@@ -106,7 +117,7 @@ class JsonArray(
     }
 
     /**
-     * Converte para texto JSON.
+     * Converte array para texto JSON.
      */
     override fun toString(): String {
 

@@ -1,6 +1,8 @@
 package projjson.core
 
-import projjson.model.*
+import projjson.model.JsonObject
+import projjson.model.JsonValue
+import projjson.model.wrap
 import kotlin.reflect.KClass
 import kotlin.reflect.KParameter
 import kotlin.reflect.KProperty
@@ -8,84 +10,93 @@ import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.primaryConstructor
 
 /**
- * Classe responsável por converter objetos Kotlin para JSON.
- * Usa Reflection para descobrir propriedades automaticamente.
+ * Conversor de objetos Kotlin para JSON.
+ *
+ * Usa Reflection para converter
+ * data classes em JsonObject.
  */
 class ProJson {
+
     /**
-     * Converte qualquer objeto Kotlin para JsonValue.
+     * Converte objeto Kotlin para JsonValue.
      */
     fun toJson(obj: Any?): JsonValue {
-        // Representação JSON de null
-        if (obj == null) return JsonPrimitive(null)
-        return when (obj) {
-            // Tipos primitivos JSON
-            is String,
-            is Number,
-            is Boolean -> JsonPrimitive(obj)
-            // List, Set, etc.
-            is Collection<*> -> {
-                val array = JsonArray()
-                // Conversão recursiva dos elementos
-                obj.forEach {
-                    array.add(toJson(it))
-                }
-                array
-            }
-            // Map<String, Any>
-            is Map<*, *> -> {
-                val json = JsonObject()
-                obj.forEach { (key, value) ->
-                    // JSON só aceita String como chave
-                    require(key is String) {
-                        "Map keys must be strings"
-                    }
-                    // Conversão recursiva
-                    json.set(key, toJson(value))
-                }
-                json
-            }
-            // Objetos Kotlin normais
-            else -> objectToJson(obj)
+
+        // Objetos complexos Kotlin
+        if (
+            obj != null &&
+            obj !is String &&
+            obj !is Number &&
+            obj !is Boolean &&
+            obj !is Collection<*> &&
+            obj !is Map<*, *> &&
+            obj !is JsonValue &&
+            !obj.javaClass.isArray
+        ) {
+            return objectToJson(obj)
         }
+
+        // Conversão padrão
+        return wrap(obj)
     }
 
     /**
-     * Associa um parâmetro do construtor
-     * à propriedade correspondente.
-     * Permite manter a ordem correta no JSON.
+     * Procura propriedade correspondente
+     * ao parâmetro do construtor.
+     *
+     * Mantém ordem correta das propriedades.
      */
-    fun KClass<*>.matchProperty(parameter: KParameter): KProperty<*> {
-        require(isData)
+    private fun KClass<*>.matchProperty(
+        parameter: KParameter
+    ): KProperty<*> {
+
+        require(isData) {
+            "Only data classes are supported"
+        }
+
         return declaredMemberProperties.first {
             it.name == parameter.name
         }
     }
 
     /**
-     * Converte um objeto Kotlin para JsonObject.
+     * Converte data class para JsonObject.
      */
     private fun objectToJson(obj: Any): JsonObject {
 
         val json = JsonObject()
-        // Classe do objeto
+
         val clazz = obj::class
-        // Guardar o tipo original
-        json.set("\$type", JsonPrimitive(clazz.simpleName))
-        // Percorrer parâmetros do construtor
-        clazz.primaryConstructor?.parameters?.forEach { param ->
-            // Encontrar propriedade correspondente
-            val prop = clazz.matchProperty(param)
-            // Obter valor da propriedade
-            val value = prop.call(obj)
-            // Conversão recursiva
-            json.set(prop.name, toJson(value))
-        }
+
+        // Nome da classe
+        json.set(
+            "\$type",
+            clazz.simpleName
+        )
+
+        // Converter propriedades
+        clazz.primaryConstructor
+            ?.parameters
+            ?.forEach { parameter ->
+
+                val property =
+                    clazz.matchProperty(parameter)
+
+                val value =
+                    property.call(obj)
+
+                // Conversão recursiva
+                json.set(
+                    property.name,
+                    toJson(value)
+                )
+            }
 
         return json
     }
+
     /**
-     * Converte diretamente para texto JSON.
+     * Converte diretamente para String JSON.
      */
     fun toJsonString(obj: Any?): String {
         return toJson(obj).toString()

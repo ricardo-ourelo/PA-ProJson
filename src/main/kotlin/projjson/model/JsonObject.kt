@@ -10,9 +10,8 @@ package projjson.model
  *   "age": 25
  * }
  *
- * Guarda propriedades no formato:
- *
- * chave -> JsonValue
+ * JsonObject é um Composite
+ * no padrão Composite.
  */
 class JsonObject(
     private val properties: MutableMap<String, JsonValue> = mutableMapOf()
@@ -21,27 +20,20 @@ class JsonObject(
     /**
      * Adiciona ou altera propriedade.
      *
-     * Se o valor já for JsonValue,
-     * é usado diretamente.
-     *
-     * Caso contrário,
-     * é convertido para JsonPrimitive.
+     * O valor é convertido
+     * automaticamente para JsonValue.
      */
     fun set(name: String, value: Any?) {
 
-        // JSON não permite chave vazia
         require(name.isNotBlank()) {
             "Property name cannot be blank"
         }
 
-        properties[name] = when (value) {
-            is JsonValue -> value
-            else -> JsonPrimitive(value)
-        }
+        properties[name] = wrap(value)
     }
 
     /**
-     * Obtém valor de uma propriedade.
+     * Obtém valor da propriedade.
      */
     fun get(name: String): JsonValue? {
         return properties[name]
@@ -94,8 +86,10 @@ class JsonObject(
      * Usa o padrão Visitor.
      */
     override fun accept(visitor: (JsonValue) -> Unit) {
+
         // Visita objeto atual
         visitor(this)
+
         // Visita propriedades internas
         properties.values.forEach {
             it.accept(visitor)

@@ -10,6 +10,16 @@ class JsonPrimitive(val value: Any?) : JsonValue() {
 
     init {
 
+        // Tipos válidos JSON
+        require(
+            value == null ||
+                    value is String ||
+                    value is Number ||
+                    value is Boolean
+        ) {
+            "Invalid JSON primitive type"
+        }
+
         // JSON não suporta NaN nem Infinity
         require(
             value !is Double || value.isFinite()
@@ -61,5 +71,8 @@ class JsonPrimitive(val value: Any?) : JsonValue() {
         return str
             .replace("\\", "\\\\")
             .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\t", "\\t")
+            .replace("\r", "\\r")
     }
 }

@@ -47,4 +47,52 @@ fun main() {
     json.remove("name")
 
     println(json)
+
+     // ---------------- FILTER ----------------
+
+    // Buscar todos os JsonPrimitive
+    val primitives = json.filter {
+        it is JsonPrimitive
+    }
+
+    println("\nPrimitives:")
+    println(primitives)
+
+    // Buscar todos os JsonArray
+    val arrays = json.filter {
+        it is JsonArray
+    }
+
+    println("\narrays:")
+    println(arrays)
+
+    // ---------------- FIND ----------------
+
+    // Procurar primeiro JsonObject
+    val firstObject = json.find {
+        it is JsonObject
+    }
+
+    println("\nFirst object:")
+    println(firstObject)
+
+    // ---------------- COUNT ----------------
+
+    // Contar primitivos
+    val primitiveCount = json.count {
+        it is JsonPrimitive
+    }
+
+    println("\nPrimitive count:")
+    println(primitiveCount)
+
+    // ---------------- MAP ----------------
+
+    // Transformar elementos em nomes das classes
+    val classNames = json.map {
+        it::class.simpleName
+    }
+
+    println(classNames)
+
 }
