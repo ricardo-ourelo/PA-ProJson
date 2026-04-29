@@ -250,7 +250,7 @@ class JsonTest {
         assert(result.contains("array"))
         assert(result.contains("primitive"))
     }
-/*
+
     // Testar Objetos Dentro De Json Manual
 
     @Test
@@ -288,5 +288,5 @@ class JsonTest {
         obj.set("data", mapOf("a" to 1))
 
         assertEquals("""{"data": {"a": 1}}""", obj.toString())
-    }*/
+    }
 }

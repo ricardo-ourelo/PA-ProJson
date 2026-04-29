@@ -87,7 +87,6 @@ private fun iterableToJson(
     val array = JsonArray()
 
     iterable.forEach {
-
         // Conversão recursiva
         array.add(it)
     }
