@@ -8,6 +8,7 @@ import kotlin.reflect.KParameter
 import kotlin.reflect.KProperty
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.primaryConstructor
+import java.util.IdentityHashMap
 
 /**
  * Conversor de objetos Kotlin para JSON.
@@ -18,26 +19,65 @@ import kotlin.reflect.full.primaryConstructor
 class ProJson {
 
     /**
+     * Mapa de referências
+     * Guarda objeto real -> id
+     *
+     * Usa identidade de memória para detetar referências repetidas e ciclos.
+     */
+    private val references =
+        IdentityHashMap<Any, String>()
+
+    /**
+     * Gera IDs únicos para objetos serializados
+     * usados em $id e $ref.
+     */
+    private var nextId = 1
+
+    private fun generateId(): String {
+        return (nextId++).toString()
+    }
+
+    /**
+     * Verifica se o valor é um objeto Kotlin complexo.
+     */
+    private fun isComplexObject(obj: Any?): Boolean {
+
+        return obj != null &&
+                obj !is String &&
+                obj !is Number &&
+                obj !is Boolean &&
+                obj !is Collection<*> &&
+                obj !is Map<*, *> &&
+                obj !is JsonValue &&
+                !obj.javaClass.isArray
+    }
+
+    /**
      * Converte objeto Kotlin para JsonValue.
      */
     fun toJson(obj: Any?): JsonValue {
 
         // Objetos complexos Kotlin
-        if (
-            obj != null &&
-            obj !is String &&
-            obj !is Number &&
-            obj !is Boolean &&
-            obj !is Collection<*> &&
-            obj !is Map<*, *> &&
-            obj !is JsonValue &&
-            !obj.javaClass.isArray
-        ) {
-            return objectToJson(obj)
+        if (isComplexObject(obj)) {
+
+            // Verifica se objeto já apareceu antes
+            if (references.containsKey(obj)) {
+
+                val ref = JsonObject()
+
+                ref.set(
+                    "\$ref",
+                    references[obj]
+                )
+
+                return ref
+            }
+            //serializa normalmente
+            return objectToJson(obj!!) //(obj!!) -> tem a certeza que o objeto não é nulo
         }
 
         // Conversão padrão
-        return wrap(obj)
+        return convert(obj)
     }
 
     /**
@@ -67,6 +107,15 @@ class ProJson {
         val json = JsonObject()
 
         val clazz = obj::class
+
+        // Gerar identificador único
+        val id = generateId()
+
+        // Guardar referência do objeto
+        references[obj] = id
+
+        // Guardar identificador no Json
+        json.set("\$id", id)
 
         // Nome da classe
         json.set(
@@ -101,4 +150,57 @@ class ProJson {
     fun toJsonString(obj: Any?): String {
         return toJson(obj).toString()
     }
+
+    /**
+     * Converte valores Kotlin para JsonValue.
+     *
+     * Permite serialização recursiva de:
+     * - collections
+     * - maps
+     * - objetos complexos
+     * mantendo referências.
+     */
+    private fun convert(value: Any?): JsonValue {
+
+        return when (value) {
+
+            is JsonValue ->
+                value
+
+            is Collection<*> -> {
+
+                val array = projjson.model.JsonArray()
+
+                value.forEach {
+                    array.add(convert(it))
+                }
+
+                array
+            }
+
+            is Map<*, *> -> {
+
+                val obj = JsonObject()
+
+                value.forEach { (key, v) ->
+
+                    require(key is String)
+
+                    obj.set(key, convert(v))
+                }
+
+                obj
+            }
+
+            else -> {
+
+                if (isComplexObject(value)) {
+                    toJson(value)
+                } else {
+                    wrap(value)
+                }
+            }
+        }
+    }
+
 }

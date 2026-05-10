@@ -11,6 +11,20 @@ class JsonTest {
 
     data class Person(val name: String, val age: Int)
 
+    data class PersonRef(
+        val name: String,
+        var friend: PersonRef?
+    )
+
+    data class Address(
+        val city: String
+    )
+
+    data class User(
+        val name: String,
+        val address: Address
+    )
+
     @Test
     fun testSimpleObject() {
         val p = Person("Ana", 25)
@@ -18,7 +32,7 @@ class JsonTest {
         val json = ProJson().toJsonString(p)
 
         assertEquals(
-            """{"${'$'}type": "Person", "name": "Ana", "age": 25}""",
+            """{"${'$'}id": "1", "${'$'}type": "Person", "name": "Ana", "age": 25}""",
             json
         )
     }
@@ -108,7 +122,7 @@ class JsonTest {
         val json = ProJson().toJsonString(p)
 
         assertEquals(
-            """{"${'$'}type": "Person", "name": "Ana", "age": 25}""",
+            """{"${'$'}id": "1", "${'$'}type": "Person", "name": "Ana", "age": 25}""",
             json
         )
     }
@@ -123,11 +137,11 @@ class JsonTest {
 
         json.accept { count++ }
 
-        assertEquals(4, count) // Nó	Conta JsonObject	1 JsonPrimitive("Person")	1 JsonPrimitive("Ana")	1 JsonPrimitive(25)	1
+        assertEquals(5, count) // Nó	Conta JsonObject	1 JsonPrimitive("Person")	1 JsonPrimitive("Ana")	1 JsonPrimitive(25)	1
     }
 
 
-//tesste null
+//teste null
 
     @Test
     fun testNull() {
@@ -288,5 +302,41 @@ class JsonTest {
         obj.set("data", mapOf("a" to 1))
 
         assertEquals("""{"data": {"a": 1}}""", obj.toString())
+    }
+
+    // Testa referências cíclicas entre objetos.
+    // Verifica se o sistema utiliza $id e $ref corretamente.
+    @Test
+    fun testCircularReference() {
+
+        val ana = PersonRef("Ana", null)
+        val joao = PersonRef("Joao", ana)
+
+        ana.friend = joao
+
+        val json =
+            ProJson().toJsonString(ana)
+
+        println(json)
+    }
+
+    // Verifica reutilização de referências quando múltiplos objetos apontam para a mesma instância.
+    @Test
+    fun testSharedReference() {
+
+        val address = Address("Lisboa")
+
+        val users = listOf(
+            User("Ana", address),
+            User("Joao", address)
+        )
+
+        val json =
+            ProJson().toJsonString(users)
+
+        assertEquals(
+            """[{"${'$'}id": "1", "${'$'}type": "User", "name": "Ana", "address": {"${'$'}id": "2", "${'$'}type": "Address", "city": "Lisboa"}}, {"${'$'}id": "3", "${'$'}type": "User", "name": "Joao", "address": {"${'$'}ref": "2"}}]""",
+            json
+        )
     }
 }

@@ -21,7 +21,7 @@ fun main() {
 
     val complex = mapOf(
         "name" to "Ana",
-        "nums" to listOf(1,2,3)
+        "nums" to listOf(1, 2, 3)
     )
 
     val json2 = ProJson().toJsonString(complex)
@@ -48,7 +48,7 @@ fun main() {
 
     println(json)
 
-     // ---------------- FILTER ----------------
+    // ---------------- FILTER ----------------
 
     // Buscar todos os JsonPrimitive
     val primitives = json.filter {
