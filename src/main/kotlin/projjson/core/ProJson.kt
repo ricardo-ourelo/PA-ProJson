@@ -9,6 +9,7 @@ import kotlin.reflect.KProperty
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.primaryConstructor
 import java.util.IdentityHashMap
+import projjson.annotations.*
 
 /**
  * Conversor de objetos Kotlin para JSON.
@@ -131,12 +132,28 @@ class ProJson {
                 val property =
                     clazz.matchProperty(parameter)
 
+                // Ignorar propriedade
+                if (
+                    property.annotations.any {
+                        it is JsonIgnore
+                    }
+                ) {
+                    return@forEach
+                }
+
                 val value =
                     property.call(obj)
 
+                val jsonName =
+                    property.annotations
+                        .filterIsInstance<JsonProperty>()
+                        .firstOrNull()
+                        ?.name
+                        ?: property.name
+
                 // Conversão recursiva
                 json.set(
-                    property.name,
+                    jsonName,
                     toJson(value)
                 )
             }
@@ -154,7 +171,7 @@ class ProJson {
     /**
      * Converte valores Kotlin para JsonValue.
      *
-     * Permite serialização recursiva de:
+     * Permite serialização recursiva de    :
      * - collections
      * - maps
      * - objetos complexos

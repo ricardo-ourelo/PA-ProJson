@@ -6,6 +6,7 @@ import projjson.model.JsonPrimitive
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import projjson.model.*
+import projjson.annotations.*
 
 class JsonTest {
 
@@ -23,6 +24,19 @@ class JsonTest {
     data class User(
         val name: String,
         val address: Address
+    )
+
+    data class UserIgnore(
+        val name: String,
+
+        @JsonIgnore
+        val password: String
+    )
+
+    data class UserProperty(
+
+        @JsonProperty("full_name")
+        val name: String
     )
 
     @Test
@@ -336,6 +350,40 @@ class JsonTest {
 
         assertEquals(
             """[{"${'$'}id": "1", "${'$'}type": "User", "name": "Ana", "address": {"${'$'}id": "2", "${'$'}type": "Address", "city": "Lisboa"}}, {"${'$'}id": "3", "${'$'}type": "User", "name": "Joao", "address": {"${'$'}ref": "2"}}]""",
+            json
+        )
+    }
+
+    // Testa se propriedades anotadas com @JsonIgnore não são serializadas para JSON
+    @Test
+    fun testJsonIgnore() {
+
+        val user = UserIgnore(
+            "Ana",
+            "123456"
+        )
+
+        val json =
+            ProJson().toJsonString(user)
+
+        assertEquals(
+            """{"${'$'}id": "1", "${'$'}type": "UserIgnore", "name": "Ana"}""",
+            json
+        )
+    }
+
+    // Testa se @JsonProperty altera o nome da propriedade no JSON
+    @Test
+    fun testJsonProperty() {
+
+        val user =
+            UserProperty("Ana")
+
+        val json =
+            ProJson().toJsonString(user)
+
+        assertEquals(
+            """{"${'$'}id": "1", "${'$'}type": "UserProperty", "full_name": "Ana"}""",
             json
         )
     }
