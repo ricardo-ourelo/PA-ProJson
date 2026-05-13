@@ -1,3 +1,4 @@
+import org.junit.jupiter.api.Assertions.assertTrue
 import projjson.core.ProJson
 import projjson.model.JsonArray
 import projjson.model.JsonObject
@@ -7,6 +8,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import projjson.model.*
 import projjson.annotations.*
+import projjson.model.Date
 
 class JsonTest {
 
@@ -14,6 +16,8 @@ class JsonTest {
 
     data class PersonRef(
         val name: String,
+
+        @Reference
         var friend: PersonRef?
     )
 
@@ -46,7 +50,7 @@ class JsonTest {
         val json = ProJson().toJsonString(p)
 
         assertEquals(
-            """{"${'$'}id": "1", "${'$'}type": "Person", "name": "Ana", "age": 25}""",
+            """{"${'$'}type": "Person", "name": "Ana", "age": 25}""",
             json
         )
     }
@@ -136,7 +140,7 @@ class JsonTest {
         val json = ProJson().toJsonString(p)
 
         assertEquals(
-            """{"${'$'}id": "1", "${'$'}type": "Person", "name": "Ana", "age": 25}""",
+            """{"${'$'}type": "Person", "name": "Ana", "age": 25}""",
             json
         )
     }
@@ -151,7 +155,7 @@ class JsonTest {
 
         json.accept { count++ }
 
-        assertEquals(5, count) // Nó	Conta JsonObject	1 JsonPrimitive("Person")	1 JsonPrimitive("Ana")	1 JsonPrimitive(25)	1
+        assertEquals(4, count) // Nó	Conta JsonObject	1 JsonPrimitive("Person")	1 JsonPrimitive("Ana")	1 JsonPrimitive(25)	1
     }
 
 
@@ -329,30 +333,19 @@ class JsonTest {
         ana.friend = joao
 
         val json =
-            ProJson().toJsonString(ana)
+            ProJson().toJsonGraphString(ana)
+
+        assertTrue(
+            json.contains("\"\$ref\"")
+        )
+
+        assertTrue(
+            json.contains("\"\$id\"")
+        )
 
         println(json)
     }
 
-    // Verifica reutilização de referências quando múltiplos objetos apontam para a mesma instância.
-    @Test
-    fun testSharedReference() {
-
-        val address = Address("Lisboa")
-
-        val users = listOf(
-            User("Ana", address),
-            User("Joao", address)
-        )
-
-        val json =
-            ProJson().toJsonString(users)
-
-        assertEquals(
-            """[{"${'$'}id": "1", "${'$'}type": "User", "name": "Ana", "address": {"${'$'}id": "2", "${'$'}type": "Address", "city": "Lisboa"}}, {"${'$'}id": "3", "${'$'}type": "User", "name": "Joao", "address": {"${'$'}ref": "2"}}]""",
-            json
-        )
-    }
 
     // Testa se propriedades anotadas com @JsonIgnore não são serializadas para JSON
     @Test
@@ -367,7 +360,7 @@ class JsonTest {
             ProJson().toJsonString(user)
 
         assertEquals(
-            """{"${'$'}id": "1", "${'$'}type": "UserIgnore", "name": "Ana"}""",
+            """{"${'$'}type": "UserIgnore", "name": "Ana"}""",
             json
         )
     }
@@ -383,7 +376,80 @@ class JsonTest {
             ProJson().toJsonString(user)
 
         assertEquals(
-            """{"${'$'}id": "1", "${'$'}type": "UserProperty", "full_name": "Ana"}""",
+            """{"${'$'}type": "UserProperty", "full_name": "Ana"}""",
+            json
+        )
+    }
+
+
+    data class Task(
+
+        val description: String,
+
+        @Reference
+        val dependency: Task?
+    )
+
+
+    @Test
+    fun testReference() {
+
+        val t1 =
+            Task("T1", null)
+
+        val t2 =
+            Task("T2", t1)
+
+        val json =
+            ProJson().toJsonString(t2)
+
+        //println(json)
+
+        assertEquals(
+            """{"${'$'}type": "Task", "description": "T2", "dependency": {"${'$'}id": "1", "${'$'}type": "Task", "description": "T1", "dependency": null}}""",
+            json
+        )
+    }
+
+    // Verifica reutilização de referências quando múltiplos objetos apontam para a mesma instância.
+    @Test
+    fun testReferenceReuse() {
+
+        val shared =
+            Task("Shared", null)
+
+        val t1 =
+            Task("T1", shared)
+
+        val t2 =
+            Task("T2", shared)
+
+        val json =
+            ProJson().toJsonString(
+                listOf(t1, t2)
+            )
+
+        assertEquals(
+            """[{"${'$'}type": "Task", "description": "T1", "dependency": {"${'$'}id": "1", "${'$'}type": "Task", "description": "Shared", "dependency": null}}, {"${'$'}type": "Task", "description": "T2", "dependency": {"${'$'}ref": "1"}}]""",
+            json
+        )
+        println(json)
+    }
+
+    // Testa plugin de serialização customizada.
+    // Verifica se @JsonString utiliza
+    // serializer personalizado corretamente.
+    @Test
+    fun testJsonStringPlugin() {
+
+        val date =
+            Date(30, 2, 2026)
+
+        val json =
+            ProJson().toJsonString(date)
+
+        assertEquals(
+            "\"30/2/2026\"",
             json
         )
     }

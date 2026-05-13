@@ -9,6 +9,12 @@ package projjson.model
  *
  * Garante que apenas valores JSON válidos
  * sejam armazenados.
+ *
+ * Não suporta serialização completa
+ * de objetos Kotlin arbitrários.
+ *
+ * Para serialização avançada,
+ * usar ProJson.
  */
 internal fun wrap(value: Any?): JsonValue {
 

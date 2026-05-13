@@ -2,7 +2,6 @@ package projjson.core
 
 import projjson.model.JsonObject
 import projjson.model.JsonValue
-import projjson.model.wrap
 import kotlin.reflect.KClass
 import kotlin.reflect.KParameter
 import kotlin.reflect.KProperty
@@ -10,7 +9,11 @@ import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.primaryConstructor
 import java.util.IdentityHashMap
 import projjson.annotations.*
-
+import projjson.model.JsonArray
+import projjson.model.JsonPrimitive
+import projjson.plugins.JsonSerializer
+import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.createInstance
 /**
  * Conversor de objetos Kotlin para JSON.
  *
@@ -20,20 +23,33 @@ import projjson.annotations.*
 class ProJson {
 
     /**
-     * Mapa de referências
-     * Guarda objeto real -> id
+     * Guarda referências de objetos já serializados.
      *
-     * Usa identidade de memória para detetar referências repetidas e ciclos.
+     * Mapeia:
+     *
+     * objeto real -> id
+     *
+     * Usa referência real de memória
+     * em vez de equals/hashCode.
+     *
+     * Necessário para:
+     * - $id
+     * - $ref
+     * - ciclos
+     * - objetos compartilhados
      */
     private val references =
         IdentityHashMap<Any, String>()
 
     /**
-     * Gera IDs únicos para objetos serializados
-     * usados em $id e $ref.
+     * Próximo identificador disponível.
      */
     private var nextId = 1
 
+    /**
+     * Gera identificadores únicos
+     * usados em $id e $ref.
+     */
     private fun generateId(): String {
         return (nextId++).toString()
     }
@@ -56,29 +72,15 @@ class ProJson {
     /**
      * Converte objeto Kotlin para JsonValue.
      */
-    fun toJson(obj: Any?): JsonValue {
+    fun toJson(
+        obj: Any?,
+        useReference: Boolean = false
+    ): JsonValue {
 
-        // Objetos complexos Kotlin
-        if (isComplexObject(obj)) {
-
-            // Verifica se objeto já apareceu antes
-            if (references.containsKey(obj)) {
-
-                val ref = JsonObject()
-
-                ref.set(
-                    "\$ref",
-                    references[obj]
-                )
-
-                return ref
-            }
-            //serializa normalmente
-            return objectToJson(obj!!) //(obj!!) -> tem a certeza que o objeto não é nulo
-        }
-
-        // Conversão padrão
-        return convert(obj)
+        return convert(
+            obj,
+            useReference
+        )
     }
 
     /**
@@ -95,36 +97,50 @@ class ProJson {
             "Only data classes are supported"
         }
 
-        return declaredMemberProperties.first {
-            it.name == parameter.name
-        }
+        return declaredMemberProperties
+            .firstOrNull {
+                it.name == parameter.name
+            }
+            ?: error(
+                "Property '${parameter.name}' not found"
+            )
     }
+
+
 
     /**
      * Converte data class para JsonObject.
      */
-    private fun objectToJson(obj: Any): JsonObject {
+    private fun objectToJson(
+        obj: Any,
+        useReference: Boolean = false
+    ): JsonObject {
 
         val json = JsonObject()
 
         val clazz = obj::class
 
-        // Gerar identificador único
-        val id = generateId()
+        // ---------------- REFERENCES ----------------
 
-        // Guardar referência do objeto
-        references[obj] = id
+        // Só criar ID quando referências estiverem ativas
+        if (useReference) {
 
-        // Guardar identificador no Json
-        json.set("\$id", id)
+            val id = generateId()
 
-        // Nome da classe
+            references[obj] = id
+
+            json.set("\$id", id)
+        }
+
+        // ---------------- TYPE ----------------
+
         json.set(
             "\$type",
             clazz.simpleName
         )
 
-        // Converter propriedades
+        // ---------------- PROPERTIES ----------------
+
         clazz.primaryConstructor
             ?.parameters
             ?.forEach { parameter ->
@@ -144,6 +160,7 @@ class ProJson {
                 val value =
                     property.call(obj)
 
+                // Nome customizado
                 val jsonName =
                     property.annotations
                         .filterIsInstance<JsonProperty>()
@@ -151,10 +168,19 @@ class ProJson {
                         ?.name
                         ?: property.name
 
+                // Verificar @Reference
+                val propertyUsesReference =
+                    property.annotations.any {
+                        it is Reference
+                    }
+
                 // Conversão recursiva
                 json.set(
                     jsonName,
-                    toJson(value)
+                    convert(
+                        value,
+                        propertyUsesReference
+                    )
                 )
             }
 
@@ -168,32 +194,162 @@ class ProJson {
         return toJson(obj).toString()
     }
 
+
+    /**
+     * Serializa usando suporte completo
+     * para referências e ciclos.
+     */
+    fun toJsonGraph(obj: Any?): JsonValue {
+
+        return toJson(
+            obj,
+            true
+        )
+    }
+
+
+    fun toJsonGraphString(
+        obj: Any?
+    ): String {
+
+        return toJsonGraph(obj)
+            .toString()
+    }
+
+    /**
+     * Converte estruturas iteráveis
+     * para JsonArray.
+     */
+    private fun iterableToJson(
+        iterable: Iterable<*>,
+        useReference: Boolean = false
+    ): JsonArray {
+
+        val array = JsonArray()
+
+        iterable.forEach {
+
+            // Conversão recursiva
+            array.add(convert(it,useReference))
+        }
+
+        return array
+    }
+
     /**
      * Converte valores Kotlin para JsonValue.
      *
-     * Permite serialização recursiva de    :
+     * Pipeline principal da serialização.
+     *
+     * Responsável por:
+     * - primitives
      * - collections
+     * - arrays
      * - maps
+     * - plugins (@JsonString)
+     * - references ($id / $ref)
      * - objetos complexos
-     * mantendo referências.
      */
-    private fun convert(value: Any?): JsonValue {
+    private fun convert(
+        value: Any?,
+        useReference: Boolean = false
+    ): JsonValue {
+
+        // ---------------- NULL ----------------
+
+        if (value == null) {
+            return JsonPrimitive(null)
+        }
+
+        // ---------------- JSON VALUES ----------------
+
+        if (value is JsonValue) {
+            return value
+        }
+
+        // ---------------- REFERENCES ----------------
+
+        // Só verifica referências quando ativado
+        if (useReference) {
+
+            references[value]?.let { id ->
+
+                val ref = JsonObject()
+
+                ref.set("\$ref", id)
+
+                return ref
+            }
+        }
+
+        // ---------------- RESTANTE SERIALIZAÇÃO ----------------
 
         return when (value) {
 
-            is JsonValue ->
-                value
+            // ---------------- PRIMITIVES ----------------
 
-            is Collection<*> -> {
+            is String,
+            is Number,
+            is Boolean ->
 
-                val array = projjson.model.JsonArray()
+                JsonPrimitive(value)
 
-                value.forEach {
-                    array.add(convert(it))
-                }
+            // ---------------- COLLECTIONS ----------------
 
-                array
-            }
+            is Collection<*> ->
+
+                iterableToJson(
+                    value,
+                    useReference
+                )
+
+            // ---------------- ARRAYS ----------------
+
+            is Array<*> ->
+
+                iterableToJson(
+                    value.asList(),
+                    useReference
+                )
+
+            // ---------------- PRIMITIVE ARRAYS ----------------
+
+            is IntArray ->
+
+                iterableToJson(
+                    value.toList(),
+                    useReference
+                )
+
+            is DoubleArray ->
+
+                iterableToJson(
+                    value.toList(),
+                    useReference
+                )
+
+            is FloatArray ->
+
+                iterableToJson(
+                    value.toList(),
+                    useReference
+                )
+
+            is LongArray ->
+
+                iterableToJson(
+                    value.toList(),
+                    useReference
+                )
+
+            is BooleanArray ->
+
+                iterableToJson(
+                    value.toList(),
+                    useReference
+                )
+
+            // ---------------- MAPS ----------------
 
             is Map<*, *> -> {
 
@@ -201,21 +357,53 @@ class ProJson {
 
                 value.forEach { (key, v) ->
 
-                    require(key is String)
+                    require(key is String) {
+                        "Map keys must be strings"
+                    }
 
-                    obj.set(key, convert(v))
+                    obj.set(
+                        key,
+                        convert(
+                            v,
+                            useReference
+                        )
+                    )
                 }
 
                 obj
             }
 
+            // ---------------- COMPLEX OBJECTS ----------------
+
             else -> {
 
-                if (isComplexObject(value)) {
-                    toJson(value)
-                } else {
-                    wrap(value)
+                // JsonString plugin
+                // ---------------- PLUGINS ----------------
+
+                // Verifica se classe possui
+                // annotation @JsonString
+                val annotation =
+                    value::class.findAnnotation<JsonString>()
+
+                // Plugin encontrado
+                if (annotation != null) {
+
+                    val serializer =
+                        annotation.serializer
+                            .createInstance()
+
+                    val result =
+                        (serializer as JsonSerializer<Any>)
+                            .serialize(value)
+
+                    return JsonPrimitive(result)
                 }
+
+                // Serialização Reflection normal
+                objectToJson(
+                    value,
+                    useReference
+                )
             }
         }
     }
