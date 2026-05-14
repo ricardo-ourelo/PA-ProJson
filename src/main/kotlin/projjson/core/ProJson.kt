@@ -15,10 +15,20 @@ import projjson.plugins.JsonSerializer
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.createInstance
 /**
- * Conversor de objetos Kotlin para JSON.
+ * Biblioteca principal responsável pela serialização
+ * de objetos Kotlin para estruturas JSON.
  *
- * Usa Reflection para converter
- * data classes em JsonObject.
+ * A conversão utiliza Reflection para:
+ * - descobrir propriedades automaticamente
+ * - suportar data classes
+ * - aplicar annotations customizadas
+ * - gerir referências e ciclos
+ * - suportar plugins de serialização
+ *
+ * A serialização produz estruturas baseadas em:
+ * - JsonObject
+ * - JsonArray
+ * - JsonPrimitive
  */
 class ProJson {
 
@@ -47,30 +57,35 @@ class ProJson {
     private var nextId = 1
 
     /**
-     * Gera identificadores únicos
-     * usados em $id e $ref.
+     * Gera identificadores únicos usados
+     * no sistema de referências JSON.
+     *
+     * Os IDs são utilizados nos campos:
+     * - $id
+     * - $ref
+     *
+     * @return identificador único
      */
     private fun generateId(): String {
         return (nextId++).toString()
     }
 
     /**
-     * Verifica se o valor é um objeto Kotlin complexo.
-     */
-    private fun isComplexObject(obj: Any?): Boolean {
-
-        return obj != null &&
-                obj !is String &&
-                obj !is Number &&
-                obj !is Boolean &&
-                obj !is Collection<*> &&
-                obj !is Map<*, *> &&
-                obj !is JsonValue &&
-                !obj.javaClass.isArray
-    }
-
-    /**
-     * Converte objeto Kotlin para JsonValue.
+     * Converte qualquer objeto Kotlin para JsonValue.
+     *
+     * Suporta:
+     * - primitivas JSON
+     * - collections
+     * - arrays
+     * - maps
+     * - data classes
+     * - referências
+     * - plugins customizados
+     *
+     * @param obj objeto a serializar
+     * @param useReference ativa suporte a $id e $ref
+     *
+     * @return estrutura JSON equivalente
      */
     fun toJson(
         obj: Any?,
@@ -109,7 +124,20 @@ class ProJson {
 
 
     /**
-     * Converte data class para JsonObject.
+     * Converte uma data class Kotlin para JsonObject.
+     *
+     * As propriedades são obtidas automaticamente
+     * através de Reflection.
+     *
+     * O método também processa:
+     * - @JsonIgnore
+     * - @JsonProperty
+     * - @Reference
+     *
+     * @param obj objeto a serializar
+     * @param useReference ativa suporte a referências
+     *
+     * @return JsonObject correspondente
      */
     private fun objectToJson(
         obj: Any,
@@ -217,8 +245,15 @@ class ProJson {
     }
 
     /**
-     * Converte estruturas iteráveis
-     * para JsonArray.
+     * Converte estruturas iteráveis para JsonArray.
+     *
+     * Cada elemento é convertido recursivamente
+     * para JsonValue.
+     *
+     * @param iterable coleção a converter
+     * @param useReference ativa suporte a referências
+     *
+     * @return array JSON equivalente
      */
     private fun iterableToJson(
         iterable: Iterable<*>,
@@ -237,18 +272,26 @@ class ProJson {
     }
 
     /**
-     * Converte valores Kotlin para JsonValue.
+     * Pipeline principal de serialização.
      *
-     * Pipeline principal da serialização.
+     * Responsável por converter recursivamente
+     * qualquer valor Kotlin para JsonValue.
      *
-     * Responsável por:
-     * - primitives
+     * O processo suporta:
+     * - null
+     * - JsonValue
+     * - referências
+     * - primitivas
      * - collections
      * - arrays
      * - maps
-     * - plugins (@JsonString)
-     * - references ($id / $ref)
-     * - objetos complexos
+     * - plugins customizados
+     * - objetos Kotlin via Reflection
+     *
+     * @param value valor a converter
+     * @param useReference ativa gestão de referências
+     *
+     * @return valor convertido para JsonValue
      */
     private fun convert(
         value: Any?,
