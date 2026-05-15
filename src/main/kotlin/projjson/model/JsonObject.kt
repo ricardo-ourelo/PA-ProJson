@@ -3,18 +3,25 @@ package projjson.model
 /**
  * Representa um objeto JSON.
  *
- * JsonObject é um Composite
- * no padrão Composite.
+ * Um JsonObject armazena pares:
+ *
+ * chave -> JsonValue
+ *
+ * Implementa o padrão Composite,
+ * permitindo árvores JSON hierárquicas.
  */
 class JsonObject(
     private val properties: MutableMap<String, JsonValue> = mutableMapOf()
 ) : JsonValue() {
 
     /**
-     * Adiciona ou altera propriedade.
+     * Adiciona ou altera uma propriedade JSON.
      *
-     * O valor é convertido
-     * automaticamente para JsonValue.
+     * O valor é automaticamente convertido
+     * para JsonValue.
+     *
+     * @param name nome da propriedade
+     * @param value valor associado
      */
     fun set(name: String, value: Any?) {
 
@@ -68,7 +75,10 @@ class JsonObject(
     }
 
     /**
-     * Devolve propriedades em modo read-only.
+     * Devolve todas as propriedades
+     * em modo read-only.
+     *
+     * @return mapa de propriedades JSON
      */
     fun properties(): Map<String, JsonValue> = properties
 

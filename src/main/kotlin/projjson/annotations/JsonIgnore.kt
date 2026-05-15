@@ -1,7 +1,8 @@
 package projjson.annotations
 
 /**
- * Ignora propriedade durante serialização JSON.
+ * Ignora uma propriedade durante
+ * a serialização JSON.
  */
 @Target(AnnotationTarget.PROPERTY)
 @Retention(AnnotationRetention.RUNTIME) //a annotation continua disponível em runtime

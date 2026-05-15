@@ -3,18 +3,22 @@ package projjson.model
 /**
  * Representa um array JSON.
  *
- * JsonArray é um Composite
- * no padrão Composite.
+ * Armazena múltiplos JsonValue
+ * numa estrutura ordenada.
+ *
+ * Implementa o padrão Composite.
  */
 class JsonArray(
     private val elements: MutableList<JsonValue> = mutableListOf()
 ) : JsonValue() {
 
     /**
-     * Adiciona elemento ao array.
+     * Adiciona um elemento ao array.
      *
-     * O valor é convertido
-     * automaticamente para JsonValue.
+     * O valor é convertido automaticamente
+     * para JsonValue.
+     *
+     * @param value elemento a adicionar
      */
     fun add(value: Any?) {
         elements.add(wrap(value))

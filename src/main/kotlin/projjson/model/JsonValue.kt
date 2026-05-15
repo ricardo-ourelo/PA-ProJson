@@ -3,15 +3,19 @@ package projjson.model
 /**
  * Classe base de todos os elementos JSON.
  *
- * JsonValue representa qualquer valor JSON:
- * - objeto
- * - array
- * - primitivo
+ * Representa qualquer estrutura JSON:
+ * - objetos
+ * - arrays
+ * - valores primitivos
+ *
+ * Utilizada como base do padrão Composite.
  */
 sealed class JsonValue {
 
     /**
-     * Permite percorrer a árvore JSON.
+     * Percorre a árvore JSON usando o padrão Visitor.
+     *
+     * @param visitor função executada para cada nó visitado
      */
     abstract fun accept(visitor: (JsonValue) -> Unit)
 }

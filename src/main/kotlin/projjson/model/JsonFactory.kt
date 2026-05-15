@@ -1,20 +1,24 @@
 package projjson.model
 
 /**
- * Converte valores Kotlin para JsonValue.
+ * Converte valores Kotlin básicos
+ * para estruturas JsonValue.
  *
- * Usado internamente por:
- * - JsonObject
- * - JsonArray
+ * Suporta:
+ * - primitivas
+ * - collections
+ * - arrays
+ * - maps
  *
- * Garante que apenas valores JSON válidos
- * sejam armazenados.
- *
- * Não suporta serialização completa
+ * Não suporta serialização avançada
  * de objetos Kotlin arbitrários.
  *
- * Para serialização avançada,
- * usar ProJson.
+ * Para objetos complexos,
+ * deve ser utilizado ProJson.
+ *
+ * @param value valor a converter
+ *
+ * @return estrutura JsonValue equivalente
  */
 internal fun wrap(value: Any?): JsonValue {
 
@@ -81,10 +85,15 @@ internal fun wrap(value: Any?): JsonValue {
 }
 
 /**
- * Converte estruturas iteráveis para JsonArray.
+ * Converte estruturas iteráveis
+ * para JsonArray.
  *
  * Cada elemento é convertido
  * recursivamente para JsonValue.
+ *
+ * @param iterable coleção a converter
+ *
+ * @return JsonArray correspondente
  */
 private fun iterableToJson(
     iterable: Iterable<*>

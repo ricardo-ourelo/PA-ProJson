@@ -3,7 +3,13 @@ package projjson.model
 /**
  * Representa um valor primitivo JSON.
  *
- * JsonPrimitive é um leaf (não tem filhos)
+ * Valores suportados:
+ * - String
+ * - Number
+ * - Boolean
+ * - null
+ *
+ * JsonPrimitive é um nó leaf
  * no padrão Composite.
  */
 class JsonPrimitive(val value: Any?) : JsonValue() {
@@ -60,12 +66,19 @@ class JsonPrimitive(val value: Any?) : JsonValue() {
     }
 
     /**
-     * Escapa caracteres especiais JSON.
+     * Escapa caracteres especiais
+     * válidos em JSON.
      *
-     * Exemplo:
+     * Suporta:
+     * - aspas
+     * - backslashes
+     * - newlines
+     * - tabs
+     * - carriage returns
      *
-     * "  ->  \"
-     * \  ->  \\
+     * @param str texto original
+     *
+     * @return texto escapado
      */
     private fun escape(str: String): String {
         return str

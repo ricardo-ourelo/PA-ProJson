@@ -1,7 +1,18 @@
 package projjson.model
 
 /**
- * Filtra elementos da árvore JSON.
+ * Extensions utilitárias para
+ * navegação e manipulação
+ * de árvores JSON.
+ */
+
+/**
+ * Filtra elementos da árvore JSON
+ * que satisfazem uma condição.
+ *
+ * @param predicate condição de filtragem
+ *
+ * @return lista de elementos encontrados
  */
 fun JsonValue.filter(
     predicate: (JsonValue) -> Boolean
@@ -18,8 +29,14 @@ fun JsonValue.filter(
 }
 
 /**
- * Procura primeiro elemento
- * que satisfaz a condição.
+ * Procura o primeiro elemento
+ * da árvore JSON que satisfaz
+ * uma condição.
+ *
+ * @param predicate condição de procura
+ *
+ * @return primeiro elemento encontrado
+ * ou null caso não exista
  */
 fun JsonValue.find(
     predicate: (JsonValue) -> Boolean
@@ -36,7 +53,12 @@ fun JsonValue.find(
 }
 
 /**
- * Conta elementos da árvore JSON.
+ * Conta elementos da árvore JSON
+ * que satisfazem uma condição.
+ *
+ * @param predicate condição de contagem
+ *
+ * @return número de elementos encontrados
  */
 fun JsonValue.count(
     predicate: (JsonValue) -> Boolean
@@ -53,7 +75,13 @@ fun JsonValue.count(
 }
 
 /**
- * Transforma elementos da árvore JSON.
+ * Transforma elementos da árvore JSON
+ * para outro tipo de valor.
+ *
+ * @param transform transformação aplicada
+ * a cada elemento
+ *
+ * @return lista transformada
  */
 fun <T> JsonValue.map(
     transform: (JsonValue) -> T
