@@ -8,7 +8,43 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import projjson.model.*
 import projjson.annotations.*
-import projjson.model.Date
+import projjson.plugins.JsonSerializer
+
+@JsonString(DateAsText::class)
+data class Date(
+    val day: Int,
+    val month: Int,
+    val year: Int
+)
+
+/**
+ * Serializer customizado para Date.
+ *
+ * Converte objetos Date para
+ * representação textual simples.
+ */
+
+class DateAsText : JsonSerializer<Date> {
+
+    /**
+     * Converte Date para texto no formato:
+     *
+     * dia/mês/ano
+     *
+     * @param value data a serializar
+     *
+     * @return representação textual da data
+     */
+
+    override fun serialize(
+        value: Date
+    ): String {
+
+        return "${value.day}/" +
+                "${value.month}/" +
+                "${value.year}"
+    }
+}
 
 class JsonTest {
 
@@ -50,7 +86,7 @@ class JsonTest {
         val json = ProJson().toJsonString(p)
 
         assertEquals(
-            """{"${'$'}type": "Person", "name": "Ana", "age": 25}""",
+            """{"${'$'}id": "1", "${'$'}type": "Person", "name": "Ana", "age": 25}""",
             json
         )
     }
@@ -140,7 +176,7 @@ class JsonTest {
         val json = ProJson().toJsonString(p)
 
         assertEquals(
-            """{"${'$'}type": "Person", "name": "Ana", "age": 25}""",
+            """{"${'$'}id": "1", "${'$'}type": "Person", "name": "Ana", "age": 25}""",
             json
         )
     }
@@ -333,7 +369,7 @@ class JsonTest {
         ana.friend = joao
 
         val json =
-            ProJson().toJsonGraphString(ana)
+            ProJson().toJsonString(ana)
 
         assertTrue(
             json.contains("\"\$ref\"")
@@ -360,7 +396,7 @@ class JsonTest {
             ProJson().toJsonString(user)
 
         assertEquals(
-            """{"${'$'}type": "UserIgnore", "name": "Ana"}""",
+            """{"${'$'}id": "1", "${'$'}type": "UserIgnore", "name": "Ana"}""",
             json
         )
     }
@@ -376,7 +412,7 @@ class JsonTest {
             ProJson().toJsonString(user)
 
         assertEquals(
-            """{"${'$'}type": "UserProperty", "full_name": "Ana"}""",
+            """{"${'$'}id": "1", "${'$'}type": "UserProperty", "full_name": "Ana"}""",
             json
         )
     }
@@ -406,7 +442,7 @@ class JsonTest {
         //println(json)
 
         assertEquals(
-            """{"${'$'}type": "Task", "description": "T2", "dependency": {"${'$'}id": "1", "${'$'}type": "Task", "description": "T1", "dependency": null}}""",
+            """{"${'$'}id": "1", "${'$'}type": "Task", "description": "T2", "dependency": {"${'$'}id": "2", "${'$'}type": "Task", "description": "T1", "dependency": null}}""",
             json
         )
     }
@@ -430,7 +466,7 @@ class JsonTest {
             )
 
         assertEquals(
-            """[{"${'$'}type": "Task", "description": "T1", "dependency": {"${'$'}id": "1", "${'$'}type": "Task", "description": "Shared", "dependency": null}}, {"${'$'}type": "Task", "description": "T2", "dependency": {"${'$'}ref": "1"}}]""",
+            """[{"${'$'}id": "1", "${'$'}type": "Task", "description": "T1", "dependency": {"${'$'}id": "2", "${'$'}type": "Task", "description": "Shared", "dependency": null}}, {"${'$'}id": "3", "${'$'}type": "Task", "description": "T2", "dependency": {"${'$'}ref": "2"}}]""",
             json
         )
         println(json)

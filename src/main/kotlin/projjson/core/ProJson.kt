@@ -83,7 +83,8 @@ class ProJson {
      * - plugins customizados
      *
      * @param obj objeto a serializar
-     * @param useReference ativa suporte a $id e $ref
+     * @param useReference ativa rastreamento
+     * de referências usando $id e $ref
      *
      * @return estrutura JSON equivalente
      */
@@ -145,18 +146,14 @@ class ProJson {
     ): JsonObject {
 
         val json = JsonObject()
-
         val clazz = obj::class
 
         // ---------------- REFERENCES ----------------
 
-        // Só criar ID quando referências estiverem ativas
         if (useReference) {
-
+            // Novo objeto
             val id = generateId()
-
             references[obj] = id
-
             json.set("\$id", id)
         }
 
@@ -219,30 +216,10 @@ class ProJson {
      * Converte diretamente para String JSON.
      */
     fun toJsonString(obj: Any?): String {
-        return toJson(obj).toString()
+        return toJson(obj, true).toString()
     }
 
 
-    /**
-     * Serializa usando suporte completo
-     * para referências e ciclos.
-     */
-    fun toJsonGraph(obj: Any?): JsonValue {
-
-        return toJson(
-            obj,
-            true
-        )
-    }
-
-
-    fun toJsonGraphString(
-        obj: Any?
-    ): String {
-
-        return toJsonGraph(obj)
-            .toString()
-    }
 
     /**
      * Converte estruturas iteráveis para JsonArray.
@@ -265,7 +242,12 @@ class ProJson {
         iterable.forEach {
 
             // Conversão recursiva
-            array.add(convert(it,useReference))
+            array.add(
+                convert(
+                    it,
+                    useReference
+                )
+            )
         }
 
         return array
@@ -308,21 +290,6 @@ class ProJson {
 
         if (value is JsonValue) {
             return value
-        }
-
-        // ---------------- REFERENCES ----------------
-
-        // Só verifica referências quando ativado
-        if (useReference) {
-
-            references[value]?.let { id ->
-
-                val ref = JsonObject()
-
-                ref.set("\$ref", id)
-
-                return ref
-            }
         }
 
         // ---------------- RESTANTE SERIALIZAÇÃO ----------------
@@ -392,6 +359,23 @@ class ProJson {
                     useReference
                 )
 
+            is ShortArray ->
+                iterableToJson(
+                    value.toList(),
+                    useReference
+                )
+
+            is ByteArray ->
+                iterableToJson(
+                    value.toList(),
+                    useReference
+                )
+
+            is CharArray ->
+                iterableToJson(
+                    value.toList(),
+                    useReference
+                )
             // ---------------- MAPS ----------------
 
             is Map<*, *> -> {
@@ -420,6 +404,17 @@ class ProJson {
 
             else -> {
 
+                // ---------------- REFERENCE ----------------
+                // Usa referência apenas quando
+                // propriedade possui @Reference
+                if (useReference) {
+                    references[value]?.let { id ->
+                        val ref = JsonObject()
+                        ref.set("\$ref", id)
+                        return ref
+                    }
+                }
+
                 // JsonString plugin
                 // ---------------- PLUGINS ----------------
 
@@ -435,6 +430,8 @@ class ProJson {
                         annotation.serializer
                             .createInstance()
 
+                    //Mantém warning controlado localmente.
+                    @Suppress("UNCHECKED_CAST")
                     val result =
                         (serializer as JsonSerializer<Any>)
                             .serialize(value)

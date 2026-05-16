@@ -35,7 +35,7 @@ class JsonObject(
     /**
      * Obtém valor da propriedade.
      */
-    fun get(name: String): JsonValue? {
+    operator fun get(name: String): JsonValue? {
         return properties[name]
     }
 

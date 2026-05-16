@@ -29,7 +29,7 @@ class JsonArray(
      *
      * Garante índice válido.
      */
-    fun get(index: Int): JsonValue {
+    operator fun get(index: Int): JsonValue {
 
         require(index in elements.indices) {
             "Invalid index"
