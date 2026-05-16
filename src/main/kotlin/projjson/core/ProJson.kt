@@ -39,14 +39,12 @@ class ProJson {
      *
      * objeto real -> id
      *
-     * Usa referência real de memória
-     * em vez de equals/hashCode.
+     * Usa identidade de memória em vez de equals/hashCode.
      *
-     * Necessário para:
-     * - $id
-     * - $ref
+     * Isso é essencial para detectar corretamente:
      * - ciclos
-     * - objetos compartilhados
+     * - referências compartilhadas
+     * - objetos distintos com mesmo conteúdo
      */
     private val references =
         IdentityHashMap<Any, String>()
@@ -99,11 +97,13 @@ class ProJson {
         )
     }
 
+
     /**
-     * Procura propriedade correspondente
-     * ao parâmetro do construtor.
+     * Obtém a propriedade correspondente ao parâmetro
+     * do construtor primário.
      *
-     * Mantém ordem correta das propriedades.
+     * Isto garante que a serialização respeita
+     * a ordem declarada no construtor da data class.
      */
     private fun KClass<*>.matchProperty(
         parameter: KParameter
@@ -150,8 +150,13 @@ class ProJson {
 
         // ---------------- REFERENCES ----------------
 
+
         if (useReference) {
-            // Novo objeto
+            /**
+             * O objeto é registado antes da serialização
+             * das propriedades para evitar recursão infinita
+             * em estruturas cíclicas.
+             */
             val id = generateId()
             references[obj] = id
             json.set("\$id", id)
@@ -448,4 +453,5 @@ class ProJson {
         }
     }
 
+}
 }
