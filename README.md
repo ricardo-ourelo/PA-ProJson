@@ -15,23 +15,26 @@ Lightweight JSON serialization framework implemented in Kotlin using:
 # Table of Contents
 
 1. Introduction
-2. Features
-3. Project Structure
-4. Architecture
-5. Core JSON Model
-6. Serialization Process
-7. Reflection-based Serialization
-8. Annotations
-9. Plugins
-10. Graph Serialization
-11. Visitor Pattern
-12. Functional Operations
-13. Examples
-14. Tests
-15. Design Decisions
-16. Limitations
-17. Future Improvements
-18. Conclusion
+2. Installation
+3. Quick Start
+4. Features
+5. Project Structure
+6. Architecture
+7. Core JSON Model
+8. Serialization Process
+9. Reflection-based Serialization
+10. Usage Tutorial
+11. Annotations
+12. Plugins
+13. Graph Serialization
+14. Visitor Pattern
+15. Functional Operations
+16. Examples
+17. Tests
+18. Design Decisions
+19. Limitations
+20. Future Improvements
+21. Conclusion
 
 ---
 
@@ -53,7 +56,57 @@ The framework converts Kotlin objects into a JSON tree representation and suppor
 
 ---
 
-# 2. Features
+# 2. Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/ricardo-ourelo/PA-ProJson
+```
+Build the project using Gradle:
+```bash
+./gradlew build
+```
+Run all tests:
+
+```bash
+./gradlew test
+```
+The generated JAR will be available in:
+```bash
+build/libs/
+```
+---
+
+# 3. Quick Start
+
+Basic Serialization:
+```kotlin
+data class Person(
+    val name: String,
+    val age: Int
+)
+
+fun main() {
+
+    val json =
+        ProJson().toJsonString(
+            Person("Ana", 25)
+        )
+
+    println(json)
+}
+```
+Output:
+```JSON
+{
+  "$type": "Person",
+  "name": "Ana",
+  "age": 25
+}
+```
+
+# 4. Features
 
 ## Core Features
 
@@ -89,7 +142,7 @@ The framework converts Kotlin objects into a JSON tree representation and suppor
 
 ---
 
-# 3. Project Structure
+# 5. Project Structure
 
 ```text
 src/
@@ -99,8 +152,8 @@ src/
 │           ├── annotations/
 │           ├── core/
 │           ├── model/
-│           ├── plugins/
-│           └── utils/
+│           └── plugins/
+│           
 │
 └── test/
     └── kotlin/
@@ -118,11 +171,11 @@ src/
 
 ---
 
-# 4. Architecture
+# 6. Architecture
 
 The framework is based on multiple architectural patterns.
 
-## 4.1 Composite Pattern
+## 6.1 Composite Pattern
 
 The JSON tree is represented through a composite hierarchy.
 
@@ -145,7 +198,7 @@ This structure allows recursive traversal of any JSON structure.
 
 ---
 
-## 4.2 Visitor Pattern
+## 6.2 Visitor Pattern
 
 All JSON nodes implement:
 
@@ -157,7 +210,7 @@ The visitor recursively traverses the complete JSON tree using depth-first trave
 
 ---
 
-## 4.3 Reflection-based Serialization
+## 6.3 Reflection-based Serialization
 
 Reflection is used to dynamically inspect Kotlin classes and serialize their properties.
 
@@ -171,7 +224,7 @@ to preserve property declaration order.
 
 ---
 
-# 5. Core JSON Model
+# 7. Core JSON Model
 
 ## JsonPrimitive
 
@@ -216,7 +269,7 @@ Example:
 
 ---
 
-# 6. Serialization Process
+# 8. Serialization Process
 
 Serialization is performed recursively.
 
@@ -246,7 +299,7 @@ JSON string
 
 ---
 
-# 7. Reflection-based Serialization
+# 9. Reflection-based Serialization
 
 Objects are dynamically serialized using Reflection.
 
@@ -278,12 +331,113 @@ clazz.primaryConstructor?.parameters
 ```
 
 This guarantees stable property ordering.
+---
+
+# 10. Usage Tutorial
+
+## Serialize Primitive Values
+
+```kotlin
+println(
+    ProJson().toJsonString(10)
+)
+```
+Result:
+```JSON
+10
+```
+## Serialize Collections
+```kotlin
+val json =
+    ProJson().toJsonString(
+        listOf(1, 2, 3)
+    )
+
+println(json)
+```
+Result:
+```JSON
+[1, 2, 3]
+```
+## Serialize Maps
+```kotlin
+val json =
+    ProJson().toJsonString(
+        mapOf(
+            "x" to 10,
+            "y" to 20
+        )
+    )
+```
+Result:
+```JSON
+{
+  "x": 10,
+  "y": 20
+}
+```
+## Serialize Data Classes
+```kotlin
+data class User(
+    val name: String,
+    val age: Int
+)
+```
+```kotlin
+val json =
+    ProJson().toJsonString(
+        User("Ana", 25)
+    )
+```
+Result:
+```JSON
+{
+  "$type": "User",
+  "name": "Ana",
+  "age": 25
+}
+```
+## Nested Structures
+```kotlin
+val data = mapOf(
+    "name" to "Ana",
+    "numbers" to listOf(1, 2, 3)
+)
+```
+Result:
+```JSON
+{
+  "name": "Ana",
+  "numbers": [1, 2, 3]
+}
+```
+## Graph Serialization
+
+Use
+```kotlin
+toJsonGraph()
+```
+or
+```kotlin
+toJsonGraphString()
+```
+when serializing:
+
+- circular references
+- shared objects
+- object graphs
+
+These methods activate:
+
+- $id
+- $ref
+- identity tracking
 
 ---
 
-# 8. Annotations
+# 11. Annotations
 
-## 8.1 @JsonIgnore
+## 11.1 @JsonIgnore
 
 Ignores a property during serialization.
 
@@ -296,7 +450,7 @@ val password: String
 
 ---
 
-## 8.2 @JsonProperty
+## 11.2 @JsonProperty
 
 Renames a property in JSON output.
 
@@ -317,7 +471,7 @@ Result:
 
 ---
 
-## 8.3 @Reference
+## 11.3 @Reference
 
 Marks a property as reference-enabled.
 
@@ -326,9 +480,21 @@ Used for:
 - graph serialization
 - circular references
 
+Example:
+
+```kotlin
+data class Task(
+
+    val description: String,
+
+    @Reference
+    val dependency: Task?
+)
+```
+
 ---
 
-## 8.4 @JsonString
+## 11.4 @JsonString
 
 Associates a custom serializer plugin.
 
@@ -341,7 +507,7 @@ data class Date(...)
 
 ---
 
-# 9. Plugins
+# 12. Plugins
 
 Plugins allow replacing the default Reflection serializer.
 
@@ -382,10 +548,9 @@ instead of:
   "$type": "Date"
 }
 ```
-
 ---
 
-# 10. Graph Serialization
+# 13. Graph Serialization
 
 The framework supports object graphs and circular references.
 
@@ -441,7 +606,7 @@ Repeated references generate:
 
 ---
 
-# 11. Visitor Pattern
+# 14. Visitor Pattern
 
 The Visitor API allows recursive traversal of the JSON tree.
 
@@ -461,7 +626,7 @@ Traversal is performed using:
 
 ---
 
-# 12. Functional Operations
+# 15. Functional Operations
 
 The framework supports functional operations over JSON trees.
 
@@ -482,7 +647,7 @@ val numbers =
 
 ---
 
-# 13. Examples
+# 16. Examples
 
 ## Primitive Serialization
 
@@ -541,7 +706,7 @@ Result:
 
 ---
 
-# 14. Tests
+# 17. Tests
 
 The project includes organized unit tests covering:
 
@@ -559,7 +724,7 @@ The project includes organized unit tests covering:
 
 ---
 
-# 15. Design Decisions
+# 18. Design Decisions
 
 ## Reflection over Manual Mapping
 
@@ -583,7 +748,7 @@ The JSON hierarchy uses recursive composition to simplify traversal and extensib
 
 ---
 
-# 16. Limitations
+# 19. Limitations
 
 Current limitations include:
 
@@ -594,7 +759,7 @@ Current limitations include:
 
 ---
 
-# 17. Future Improvements
+# 20. Future Improvements
 
 Possible future extensions:
 
@@ -608,7 +773,7 @@ Possible future extensions:
 
 ---
 
-# 18. Conclusion
+# 21. Conclusion
 
 ProJson demonstrates how advanced programming concepts can be combined to implement a flexible JSON serialization framework.
 
@@ -620,4 +785,4 @@ The project integrates:
 - Plugin systems
 - Graph serialization
 
-while maintaining a lightweight and extensible architecture.
+The framework supports dynamic object serialization, annotation-based customization, recursive traversal, and circular reference handling while maintaining a lightweight and extensible architecture.
