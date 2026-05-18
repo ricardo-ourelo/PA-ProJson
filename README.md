@@ -413,25 +413,29 @@ Result:
 ```
 ## Graph Serialization
 
-Use
-```kotlin
-toJsonGraph()
-```
-or
-```kotlin
-toJsonGraphString()
-```
-when serializing:
+Graph serialization is automatically supported by the framework.
+
+The default serialization process already handles:
 
 - circular references
 - shared objects
 - object graphs
 
-These methods activate:
+The serializer automatically activates:
 
-- $id
-- $ref
+- `$id`
+- `$ref`
 - identity tracking
+
+No special serialization method is required.
+
+Example:
+
+```kotlin
+val json =
+    ProJson().toJsonString(obj)
+```
+When repeated objects or cycles are detected, the framework generates reference structures automatically.
 
 ---
 
