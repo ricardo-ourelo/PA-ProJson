@@ -58,24 +58,39 @@ The framework converts Kotlin objects into a JSON tree representation and suppor
 
 # 2. Installation
 
-Clone the repository:
+## Requirements
+
+- Kotlin 2.x
+- JDK 17+
+- Gradle
+- JUnit 5
+
+## Clone Repository
 
 ```bash
-git clone https://github.com/ricardo-ourelo/PA-ProJson
+git clone <repository-url>
 ```
-Build the project using Gradle:
+
+## Build Project
+
 ```bash
 ./gradlew build
 ```
-Run all tests:
+
+## Run Tests
 
 ```bash
 ./gradlew test
 ```
+
+## Generated JAR
+
 The generated JAR will be available in:
-```bash
+
+```text
 build/libs/
 ```
+
 ---
 
 # 3. Quick Start
@@ -112,14 +127,38 @@ Output:
 
 - JSON object model
 - Reflection-based object serialization
-- Support for:
-  - primitives
-  - collections
-  - arrays
-  - maps
-  - nested objects
 - Visitor traversal
 - Functional operations
+
+---
+
+## Supported Types
+
+The framework supports serialization of:
+
+- String
+- Number
+- Boolean
+- null
+- Lists
+- Arrays
+- Primitive Arrays
+- Maps
+- Nested Objects
+- Data Classes
+
+---
+
+## Validation Rules
+
+The framework validates unsupported JSON values during serialization.
+
+Validation rules include:
+
+- NaN values are rejected
+- Infinite numbers are rejected
+- Map keys must be strings
+- Invalid values generate IllegalArgumentException.
 
 ---
 
@@ -139,8 +178,6 @@ Output:
 - Circular reference handling
 - Shared reference detection
 - `$id` / `$ref` generation
-
----
 
 # 5. Project Structure
 
@@ -207,6 +244,16 @@ fun accept(visitor: (JsonValue) -> Unit)
 ```
 
 The visitor recursively traverses the complete JSON tree using depth-first traversal.
+
+Traversal visits:
+- the current node first
+- child nodes recursively afterwards
+
+This allows:
+- recursive tree traversal
+- functional operations
+- tree inspection
+- node filtering
 
 ---
 
@@ -413,29 +460,91 @@ Result:
 ```
 ## Graph Serialization
 
-Graph serialization is automatically supported by the framework.
+Graph serialization is supported through identity tracking and `@Reference` annotations.
 
-The default serialization process already handles:
+The framework supports:
 
 - circular references
 - shared objects
 - object graphs
+- cycle prevention
 
-The serializer automatically activates:
+Properties annotated with `@Reference`
+participate in graph serialization.
+
+Objects reachable through these properties may generate:
 
 - `$id`
 - `$ref`
-- identity tracking
 
-No special serialization method is required.
+during serialization.
+
+The serializer automatically tracks object identity using:
+
+```kotlin
+IdentityHashMap
+```
+
+IdentityHashMap is required because graph serialization depends on object identity rather than structural equality.
+
+This allows the framework to correctly detect:
+
+- repeated objects
+- shared references
+- circular structures
 
 Example:
 
 ```kotlin
-val json =
-    ProJson().toJsonString(obj)
+data class Person(
+
+    val name: String,
+
+    @Reference
+    val friend: Person?
+)
 ```
-When repeated objects or cycles are detected, the framework generates reference structures automatically.
+
+```kotlin
+val ana =
+    Person("Ana", null)
+
+val joao =
+    Person("Joao", ana)
+
+ana.friend = joao
+
+val json =
+    ProJson().toJsonString(ana)
+```
+
+Result:
+
+```json
+{
+  "$id": "1",
+  "$type": "Person",
+  "name": "Ana",
+  "friend": {
+    "$id": "2",
+    "$type": "Person",
+    "name": "Joao",
+    "friend": {
+      "$ref": "1"
+    }
+  }
+}
+```
+
+Repeated objects generate:
+
+```json
+{
+  "$ref": "1"
+}
+```
+
+instead of duplicating the object again.
 
 ---
 
@@ -477,12 +586,13 @@ Result:
 
 ## 11.3 @Reference
 
-Marks a property as reference-enabled.
+Marks a property as eligible for object reference reuse using `$ref`.
 
 Used for:
 - shared references
 - graph serialization
 - circular references
+- cycle prevention
 
 Example:
 
@@ -494,6 +604,21 @@ data class Task(
     @Reference
     val dependency: Task?
 )
+```
+
+Result:
+
+```json
+{
+  "$type": "Task",
+  "description": "T2",
+  "dependency": {
+    "$id": "1",
+    "$type": "Task",
+    "description": "T1",
+    "dependency": null
+  }
+}
 ```
 
 ---
@@ -513,7 +638,7 @@ data class Date(...)
 
 # 12. Plugins
 
-Plugins allow replacing the default Reflection serializer.
+Plugins allow replacing the default Reflection-based serialization strategy.
 
 ## Plugin Interface
 
@@ -538,6 +663,22 @@ class DateAsText
     }
 }
 ```
+
+---
+
+## Plugin Usage
+
+```kotlin
+@JsonString(DateAsText::class)
+data class Date(
+
+    val day: Int,
+    val month: Int,
+    val year: Int
+)
+```
+
+---
 
 ## Result
 
@@ -566,13 +707,17 @@ Objects are tracked using:
 IdentityHashMap
 ```
 
+IdentityHashMap was required because graph serialization depends on object identity rather than structural equality.
+
 Identity comparison is required to correctly detect:
 
 - circular references
 - shared objects
 - repeated instances
 
-## $id and $ref
+---
+
+## `$id` and `$ref`
 
 Objects receive unique identifiers:
 
@@ -639,6 +784,7 @@ Examples:
 - `filter`
 - `find`
 - `count`
+- `map`
 
 Example:
 
@@ -779,14 +925,24 @@ Possible future extensions:
 
 # 21. Conclusion
 
-ProJson demonstrates how advanced programming concepts can be combined to implement a flexible JSON serialization framework.
+ProJson demonstrates how advanced programming concepts can be combined to implement a flexible and extensible JSON serialization framework.
 
 The project integrates:
 - Reflection
 - Visitor Pattern
 - Composite Pattern
 - Functional Programming
-- Plugin systems
+- Plugin architecture
 - Graph serialization
 
-The framework supports dynamic object serialization, annotation-based customization, recursive traversal, and circular reference handling while maintaining a lightweight and extensible architecture.
+The framework supports:
+- dynamic object serialization
+- annotation-based customization
+- recursive tree traversal
+- plugin-based serializers
+- circular reference handling
+- object graph serialization
+
+while maintaining a lightweight and modular architecture.
+
+The project also demonstrates how design patterns and Reflection can be combined to build extensible serialization systems in Kotlin.
