@@ -2,7 +2,7 @@ plugins {
     kotlin("jvm") version "2.3.0"
 }
 
-group = "pt.iscte.projson"
+group = "pt.iscte.pa.projson"
 version = "1.0.0"
 
 repositories {
