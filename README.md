@@ -1,6 +1,6 @@
 # ProJson
 
-Lightweight JSON serialization framework implemented in Kotlin using:
+Lightweight JSON serialization library implemented in Kotlin using:
 
 - Reflection
 - Composite Pattern
@@ -40,7 +40,7 @@ Lightweight JSON serialization framework implemented in Kotlin using:
 
 # 1. Introduction
 
-ProJson is a lightweight JSON framework developed in Kotlin for educational purposes in the Advanced Programming course.
+ProJson is a lightweight JSON library developed in Kotlin for educational purposes in the Advanced Programming course.
 
 The project demonstrates the application of several advanced programming concepts including:
 
@@ -52,7 +52,7 @@ The project demonstrates the application of several advanced programming concept
 - Plugin architecture
 - Graph serialization
 
-The framework converts Kotlin objects into a JSON tree representation and supports recursive traversal, annotations, references, and custom serializers.
+The library converts Kotlin objects into a JSON tree representation and supports recursive traversal, annotations, references, and custom serializers.
 
 ---
 
@@ -134,7 +134,7 @@ Output:
 
 ## Supported Types
 
-The framework supports serialization of:
+The library supports serialization of:
 
 - String
 - Number
@@ -151,7 +151,7 @@ The framework supports serialization of:
 
 ## Validation Rules
 
-The framework validates unsupported JSON values during serialization.
+The library validates unsupported JSON values during serialization.
 
 Validation rules include:
 
@@ -210,7 +210,7 @@ src/
 
 # 6. Architecture
 
-The framework is based on multiple architectural patterns.
+The library is based on multiple architectural patterns.
 
 ## 6.1 Composite Pattern
 
@@ -261,7 +261,7 @@ This allows:
 
 Reflection is used to dynamically inspect Kotlin classes and serialize their properties.
 
-The framework uses:
+The library uses:
 
 ```kotlin
 primaryConstructor.parameters
@@ -462,7 +462,7 @@ Result:
 
 Graph serialization is supported through identity tracking and `@Reference` annotations.
 
-The framework supports:
+The library supports:
 
 - circular references
 - shared objects
@@ -487,7 +487,7 @@ IdentityHashMap
 
 IdentityHashMap is required because graph serialization depends on object identity rather than structural equality.
 
-This allows the framework to correctly detect:
+This allows the library to correctly detect:
 
 - repeated objects
 - shared references
@@ -697,7 +697,7 @@ instead of:
 
 # 13. Graph Serialization
 
-The framework supports object graphs and circular references.
+The library supports object graphs and circular references.
 
 ## Identity Tracking
 
@@ -777,7 +777,7 @@ Traversal is performed using:
 
 # 15. Functional Operations
 
-The framework supports functional operations over JSON trees.
+The library supports functional operations over JSON trees.
 
 Examples:
 
@@ -925,7 +925,7 @@ Possible future extensions:
 
 # 21. Conclusion
 
-ProJson demonstrates how advanced programming concepts can be combined to implement a flexible and extensible JSON serialization framework.
+ProJson demonstrates how advanced programming concepts can be combined to implement a flexible and extensible JSON serialization library.
 
 The project integrates:
 - Reflection
@@ -935,7 +935,7 @@ The project integrates:
 - Plugin architecture
 - Graph serialization
 
-The framework supports:
+The library supports:
 - dynamic object serialization
 - annotation-based customization
 - recursive tree traversal
